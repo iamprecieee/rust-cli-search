@@ -3,9 +3,7 @@ use std::{env, process};
 use rust_cli::{Config, run};
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
-
-    let config: Config = Config::build(&args).unwrap_or_else(|err| {
+    let config: Config = Config::build(env::args()).unwrap_or_else(|err| {
         eprintln!("{err}");
         process::exit(1);
     });

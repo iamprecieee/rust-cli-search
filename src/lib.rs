@@ -12,23 +12,24 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn build(args: &[String]) -> Result<Self, Error> {
-        // Ensure more than 3 arguments are passed
-        if args.len() < 3 {
-            return Err(Error::new(ErrorKind::Other, "Not enough arguments!"));
-        }
+    pub fn build(mut args: impl Iterator<Item = String>) -> Result<Self, Error> {
+        args.next();
 
-        let query = args[1].clone();
-        let file_path = args[2].clone();
-
-        // Check for limit value and set to 0 if not u32 or None if missing
-        let result_limit = {
-            if args.len() > 3 {
-                Some(args[3].clone().parse::<u32>().unwrap_or(0))
-            } else {
-                None
-            }
+        let query = match args.next() {
+            Some(arg) => arg,
+            None => return Err(Error::new(ErrorKind::Other, "Query string not found!"))
         };
+
+        let file_path = match args.next() {
+            Some(arg) => arg,
+            None => return Err(Error::new(ErrorKind::Other, "File path not found!"))
+        };
+
+        let result_limit = match args.next() {
+            Some(arg) => Some(arg.parse::<u32>().unwrap_or(0)),
+            None => None
+        };
+
         let ignore_case = env::var("IGNORE_CASE").is_ok();
 
         Ok(Self {
@@ -97,7 +98,7 @@ mod tests {
             "hello".to_string(),
             "file.txt".to_string(),
             "2".to_string(),
-        ];
+        ].into_iter();
 
         assert_eq!(
             Config {
@@ -106,14 +107,14 @@ mod tests {
                 result_limit: Some(2),
                 ignore_case: false
             },
-            Config::build(&args).unwrap()
+            Config::build(args).unwrap()
         )
     }
 
     #[test]
-    #[should_panic(expected = "Not enough arguments!")]
+    #[should_panic(expected = "Query string not found!")]
     fn config_build_failure() {
-        Config::build(&[]).unwrap();
+        Config::build([].into_iter()).unwrap();
     }
 
     #[test]
